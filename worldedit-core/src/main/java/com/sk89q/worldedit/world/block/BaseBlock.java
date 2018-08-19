@@ -139,7 +139,7 @@ public class BaseBlock implements BlockStateHolder<BaseBlock>, TileEntityBlock {
 
         final BaseBlock otherBlock = (BaseBlock) o;
 
-        return this.toImmutableState().equals(otherBlock.toImmutableState()) && Objects.equals(getNbtData(), otherBlock.getNbtData());
+        return this.toImmutableState().equalsFuzzy(otherBlock.toImmutableState()) && Objects.equals(getNbtData(), otherBlock.getNbtData());
 
     }
 
