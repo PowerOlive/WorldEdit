@@ -37,6 +37,7 @@ import com.sk89q.worldedit.extension.platform.Actor;
 import com.sk89q.worldedit.extension.platform.Capability;
 import com.sk89q.worldedit.extension.platform.Platform;
 import com.sk89q.worldedit.extent.inventory.BlockBag;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -102,6 +103,8 @@ public class WorldEditPlugin extends JavaPlugin implements TabCompleter {
         // Forge WorldEdit and there's (probably) not going to be any other
         // platforms to be worried about... at the current time of writing
         WorldEdit.getInstance().getEventBus().post(new PlatformReadyEvent());
+
+        Bukkit.getScheduler().runTaskTimer(this, () -> WorldEdit.getInstance().getSessionManager().tickQueues(), 1, 1);
     }
 
     private void loadConfig() {
