@@ -104,7 +104,7 @@ public class WorldEditPlugin extends JavaPlugin implements TabCompleter {
         // platforms to be worried about... at the current time of writing
         WorldEdit.getInstance().getEventBus().post(new PlatformReadyEvent());
 
-        Bukkit.getScheduler().runTaskTimer(this, () -> WorldEdit.getInstance().getSessionManager().tickQueues(), 1, 1);
+        Bukkit.getScheduler().runTaskTimer(this, () -> WorldEdit.getInstance().tickOperationQueues(), 1, 1);
     }
 
     private void loadConfig() {
