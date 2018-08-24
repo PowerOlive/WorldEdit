@@ -93,7 +93,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 import javax.annotation.Nullable;
 
@@ -194,6 +193,11 @@ public class ForgeWorld extends AbstractWorld {
         }
 
         return successful;
+    }
+
+    @Override
+    public boolean notifyAndLightBlock(Vector position) throws WorldEditException {
+        return false;
     }
 
     @Override
