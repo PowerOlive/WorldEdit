@@ -1,11 +1,10 @@
-import net.minecrell.gradle.licenser.LicenseExtension
+import org.cadixdev.gradle.licenser.LicenseExtension
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.repositories
 import org.gradle.kotlin.dsl.the
 
@@ -25,42 +24,38 @@ fun Project.applyCommonConfiguration() {
         }
     }
 
-    configurations.findByName("compileClasspath")?.apply {
-        resolutionStrategy.componentSelection {
-            withModule("org.slf4j:slf4j-api") {
-                reject("No SLF4J allowed on compile classpath")
-            }
-        }
-    }
-
     plugins.withId("java") {
         the<JavaPluginExtension>().toolchain {
-            languageVersion.set(JavaLanguageVersion.of(8))
+            languageVersion.set(JavaLanguageVersion.of(16))
         }
     }
 
     dependencies {
         constraints {
-            for (conf in configurations.names) {
-                add(conf, "com.google.guava:guava") {
-                    version { strictly(Versions.GUAVA) }
+            for (conf in configurations) {
+                if (conf.isCanBeConsumed || conf.isCanBeResolved) {
+                    // dependencies don't get declared in these
+                    continue
+                }
+                add(conf.name, "com.google.guava:guava") {
+                    version { require(Versions.GUAVA) }
                     because("Mojang provides Guava")
                 }
-                add(conf, "com.google.code.gson:gson") {
-                    version { strictly(Versions.GSON) }
+                add(conf.name, "com.google.code.gson:gson") {
+                    version { require(Versions.GSON) }
                     because("Mojang provides Gson")
                 }
-                add(conf, "it.unimi.dsi:fastutil") {
-                    version { strictly(Versions.FAST_UTIL) }
+                add(conf.name, "it.unimi.dsi:fastutil") {
+                    version { require(Versions.FAST_UTIL) }
                     because("Mojang provides FastUtil")
                 }
             }
         }
     }
 
-    apply(plugin = "net.minecrell.licenser")
+    apply(plugin = "org.cadixdev.licenser")
     configure<LicenseExtension> {
-        header = rootProject.file("HEADER.txt")
+        header(rootProject.file("HEADER.txt"))
         include("**/*.java")
         include("**/*.kt")
     }

@@ -18,21 +18,34 @@ configurations.all {
     }
 }
 
+val localImplementation = configurations.create("localImplementation") {
+    description = "Dependencies used locally, but provided by the runtime Bukkit implementation"
+    isCanBeConsumed = false
+    isCanBeResolved = false
+}
+configurations["compileOnly"].extendsFrom(localImplementation)
+configurations["testImplementation"].extendsFrom(localImplementation)
+
+configurations.all {
+    attributes.attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 16)
+}
+
 dependencies {
     "api"(project(":worldedit-core"))
     "api"(project(":worldedit-libs:bukkit"))
-    "api"("org.spigotmc:spigot-api:1.16.1-R0.1-SNAPSHOT") {
+    // Technically this is api, but everyone should already have some form of the bukkit API
+    // Avoid pulling in another one, especially one so outdated.
+    "localImplementation"("org.spigotmc:spigot-api:1.17-R0.1-SNAPSHOT") {
         exclude("junit", "junit")
     }
 
-    "implementation"(enforcedPlatform("org.apache.logging.log4j:log4j-bom:2.8.1") {
-        // Note: Paper will bump to 2.11.2, but we should only depend on 2.8 APIs for compatibility.
+    "localImplementation"(platform("org.apache.logging.log4j:log4j-bom:2.14.1") {
         because("Spigot provides Log4J (sort of, not in API, implicitly part of server)")
     })
-    "implementation"("org.apache.logging.log4j:log4j-api")
+    "localImplementation"("org.apache.logging.log4j:log4j-api")
 
     "compileOnly"("org.jetbrains:annotations:20.1.0")
-    "compileOnly"("com.destroystokyo.paper:paper-api:1.16.1-R0.1-SNAPSHOT") {
+    "compileOnly"("io.papermc.paper:paper-api:1.17-R0.1-SNAPSHOT") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
     "implementation"("io.papermc:paperlib:1.0.6")
@@ -81,4 +94,10 @@ tasks.named<ShadowJar>("shadowJar") {
 
 tasks.named("assemble").configure {
     dependsOn("shadowJar")
+}
+
+configure<PublishingExtension> {
+    publications.named<MavenPublication>("maven") {
+        from(components["java"])
+    }
 }

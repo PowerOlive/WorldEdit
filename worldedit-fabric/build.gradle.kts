@@ -25,10 +25,9 @@ configure<LoomGradleExtension> {
     accessWidener("src/main/resources/worldedit.accesswidener")
 }
 
-val minecraftVersion = "1.16.4"
-val yarnMappings = "1.16.4+build.7:v2"
-val loaderVersion = "0.10.8"
-val fabricApiVersion = "0.29.3+1.16"
+val minecraftVersion = "1.17.1"
+val yarnMappings = "1.17.1+build.1:v2"
+val loaderVersion = "0.11.6"
 
 configurations.all {
     resolutionStrategy {
@@ -47,8 +46,8 @@ repositories {
 
 dependencies {
     "api"(project(":worldedit-core"))
-    "implementation"(enforcedPlatform("org.apache.logging.log4j:log4j-bom:2.8.1") {
-        because("Mojang provides Log4J at 2.8.1")
+    "implementation"(platform("org.apache.logging.log4j:log4j-bom:2.14.1") {
+        because("Mojang provides Log4J at 2.14.1")
     })
 
     "minecraft"("com.mojang:minecraft:$minecraftVersion")
@@ -56,7 +55,7 @@ dependencies {
     "modImplementation"("net.fabricmc:fabric-loader:$loaderVersion")
 
     // [1] declare fabric-api dependency...
-    "fabricApi"("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
+    "fabricApi"("net.fabricmc.fabric-api:fabric-api:0.36.1+1.17")
 
     // [2] Load the API dependencies from the fabric mod json...
     @Suppress("UNCHECKED_CAST")
@@ -117,21 +116,20 @@ configure<BasePluginConvention> {
 configure<PublishingExtension> {
     publications.named<MavenPublication>("maven") {
         artifactId = the<BasePluginConvention>().archivesBaseName
+        artifact(tasks.named("jar")) {
+            builtBy(tasks.named("remapJar"))
+        }
+        artifact(tasks.named("sourcesJar")) {
+            builtBy(tasks.named("remapSourcesJar"))
+        }
     }
 }
 
 tasks.named<Copy>("processResources") {
     // this will ensure that this task is redone when the versions change.
     inputs.property("version", project.ext["internalVersion"])
-
-    from(sourceSets["main"].resources.srcDirs) {
-        include("fabric.mod.json")
-        expand("version" to project.ext["internalVersion"])
-    }
-
-    // copy everything else except the mod json
-    from(sourceSets["main"].resources.srcDirs) {
-        exclude("fabric.mod.json")
+    filesMatching("fabric.mod.json") {
+        this.expand("version" to project.ext["internalVersion"])
     }
 }
 
@@ -144,31 +142,6 @@ tasks.named<ShadowJar>("shadowJar") {
 
         include(dependency("org.antlr:antlr4-runtime"))
     }
-}
-
-tasks.register<Jar>("deobfJar") {
-    from(sourceSets["main"].output)
-    archiveClassifier.set("dev")
-}
-
-val deobfElements = configurations.register("deobfElements") {
-    isVisible = false
-    description = "De-obfuscated elements for libs"
-    isCanBeResolved = false
-    isCanBeConsumed = true
-    attributes {
-        attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage.JAVA_API))
-        attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category.LIBRARY))
-        attribute(Bundling.BUNDLING_ATTRIBUTE, project.objects.named(Bundling.EXTERNAL))
-        attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(LibraryElements.JAR))
-        attribute(TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 8)
-    }
-    outgoing.artifact(tasks.named("deobfJar"))
-}
-
-val javaComponent = components["java"] as AdhocComponentWithVariants
-javaComponent.addVariantsFromConfiguration(deobfElements.get()) {
-    mapToMavenScope("runtime")
 }
 
 tasks.register<RemapJarTask>("remapShadowJar") {

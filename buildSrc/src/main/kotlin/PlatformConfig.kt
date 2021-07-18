@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.api.Project
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.plugins.quality.CheckstyleExtension
 import org.gradle.api.publish.PublishingExtension
@@ -32,7 +33,6 @@ fun Project.applyPlatformAndCoreConfiguration() {
     apply(plugin = "idea")
     apply(plugin = "maven-publish")
     apply(plugin = "checkstyle")
-    apply(plugin = "com.github.johnrengelman.shadow")
     apply(plugin = "com.jfrog.artifactory")
 
     ext["internalVersion"] = "$version+${rootProject.ext["gitCommitHash"]}"
@@ -44,6 +44,7 @@ fun Project.applyPlatformAndCoreConfiguration() {
             val disabledLint = listOf(
                 "processing", "path", "fallthrough", "serial"
             )
+            options.release.set(8)
             options.compilerArgs.addAll(listOf("-Xlint:all") + disabledLint.map { "-Xlint:-$it" })
             options.isDeprecation = true
             options.encoding = "UTF-8"
@@ -64,7 +65,7 @@ fun Project.applyPlatformAndCoreConfiguration() {
         "testImplementation"("org.junit.jupiter:junit-jupiter-params:${Versions.JUNIT}")
         "testImplementation"("org.mockito:mockito-core:${Versions.MOCKITO}")
         "testImplementation"("org.mockito:mockito-junit-jupiter:${Versions.MOCKITO}")
-        "testRuntime"("org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT}")
+        "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT}")
     }
 
     // Java 8 turns on doclint which we fail
@@ -81,8 +82,18 @@ fun Project.applyPlatformAndCoreConfiguration() {
 
     the<JavaPluginExtension>().withJavadocJar()
 
-    if (name == "worldedit-core" || name == "worldedit-bukkit") {
+    if (name in setOf("worldedit-core", "worldedit-bukkit", "worldedit-fabric")) {
         the<JavaPluginExtension>().withSourcesJar()
+    }
+
+    if (name != "worldedit-fabric") {
+        configurations["compileClasspath"].apply {
+            resolutionStrategy.componentSelection {
+                withModule("org.slf4j:slf4j-api") {
+                    reject("No SLF4J allowed on compile classpath")
+                }
+            }
+        }
     }
 
     tasks.named("check").configure {
@@ -92,7 +103,6 @@ fun Project.applyPlatformAndCoreConfiguration() {
     configure<PublishingExtension> {
         publications {
             register<MavenPublication>("maven") {
-                from(components["java"])
                 versionMapping {
                     usage("java-api") {
                         fromResolutionOf("runtimeClasspath")
@@ -109,6 +119,7 @@ fun Project.applyPlatformAndCoreConfiguration() {
 }
 
 fun Project.applyShadowConfiguration() {
+    apply(plugin = "com.github.johnrengelman.shadow")
     tasks.named<ShadowJar>("shadowJar") {
         archiveClassifier.set("dist")
         dependencies {
@@ -122,6 +133,11 @@ fun Project.applyShadowConfiguration() {
         exclude("LICENSE*")
         exclude("META-INF/maven/**")
         minimize()
+    }
+    val javaComponent = components["java"] as AdhocComponentWithVariants
+    // I don't think we want this published (it's the shadow jar)
+    javaComponent.withVariantsFromConfiguration(configurations["shadowRuntimeElements"]) {
+        skip()
     }
 }
 

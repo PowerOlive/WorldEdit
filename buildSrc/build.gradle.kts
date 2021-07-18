@@ -9,10 +9,6 @@ repositories {
     mavenCentral()
     gradlePluginPortal()
     maven {
-        name = "Forge Maven"
-        url = uri("https://maven.minecraftforge.net/")
-    }
-    maven {
         name = "Fabric"
         url = uri("https://maven.fabricmc.net/")
     }
@@ -23,6 +19,13 @@ repositories {
     maven {
         name = "EngineHub Repository"
         url = uri("https://maven.enginehub.org/repo/")
+    }
+    maven {
+        name = "Forge Maven"
+        url = uri("https://maven.minecraftforge.net/")
+        content {
+            includeGroupByRegex("net\\.minecraftforge\\..*")
+        }
     }
 }
 
@@ -36,14 +39,12 @@ val mixinVersion: String = properties.getProperty("mixin.version")
 
 dependencies {
     implementation(gradleApi())
-    implementation("gradle.plugin.net.minecrell:licenser:0.4.1")
+    implementation("gradle.plugin.org.cadixdev.gradle:licenser:0.6.0")
     implementation("org.ajoberstar.grgit:grgit-gradle:4.1.0")
     implementation("com.github.jengelman.gradle.plugins:shadow:6.1.0")
-    implementation("net.ltgt.apt-eclipse:net.ltgt.apt-eclipse.gradle.plugin:0.21")
-    implementation("net.ltgt.apt-idea:net.ltgt.apt-idea.gradle.plugin:0.21")
     implementation("org.jfrog.buildinfo:build-info-extractor-gradle:4.21.0")
     implementation("org.spongepowered:SpongeGradle:0.11.5")
-    implementation("net.minecraftforge.gradle:ForgeGradle:4.1.7")
+    implementation("net.minecraftforge.gradle:ForgeGradle:5.0.9")
     implementation("net.fabricmc:fabric-loom:$loomVersion")
     implementation("net.fabricmc:sponge-mixin:$mixinVersion")
     implementation("org.enginehub.gradle:gradle-codecov-plugin:0.1.0")

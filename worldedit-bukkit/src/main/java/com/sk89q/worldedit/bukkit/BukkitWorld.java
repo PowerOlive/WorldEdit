@@ -76,6 +76,7 @@ public class BukkitWorld extends AbstractWorld {
     private static final Logger LOGGER = LogManagerCompat.getLogger();
 
     private static final boolean HAS_3D_BIOMES;
+    private static final boolean HAS_MIN_Y;
 
     private static final Map<Integer, Effect> effects = new HashMap<>();
 
@@ -94,6 +95,13 @@ public class BukkitWorld extends AbstractWorld {
             temp = false;
         }
         HAS_3D_BIOMES = temp;
+        try {
+            World.class.getMethod("getMinHeight");
+            temp = true;
+        } catch (NoSuchMethodException e) {
+            temp = false;
+        }
+        HAS_MIN_Y = temp;
     }
 
     private final WeakReference<World> worldRef;
@@ -207,7 +215,7 @@ public class BukkitWorld extends AbstractWorld {
             if (adapter != null) {
                 return adapter.regenerate(getWorld(), region, extent, options);
             } else {
-                throw new UnsupportedOperationException("Missing BukkitImplAdapater for this version.");
+                throw new UnsupportedOperationException("Missing BukkitImplAdapter for this version.");
             }
         } catch (Exception e) {
             LOGGER.warn("Regeneration via adapter failed.", e);
@@ -348,6 +356,14 @@ public class BukkitWorld extends AbstractWorld {
     @Override
     public int getMaxY() {
         return getWorld().getMaxHeight() - 1;
+    }
+
+    @Override
+    public int getMinY() {
+        if (HAS_MIN_Y) {
+            return getWorld().getMinHeight();
+        }
+        return super.getMinY();
     }
 
     @SuppressWarnings("deprecation")

@@ -1,11 +1,9 @@
-import net.minecrell.gradle.licenser.LicenseExtension
+import org.cadixdev.gradle.licenser.LicenseExtension
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
 plugins {
-    id("java-library")
-    id("net.ltgt.apt-eclipse")
-    id("net.ltgt.apt-idea")
-    id("antlr")
+    `java-library`
+    antlr
 }
 
 applyPlatformAndCoreConfiguration()
@@ -31,7 +29,7 @@ configurations {
 dependencies {
     constraints {
         "implementation"( "org.yaml:snakeyaml") {
-            version { strictly("1.26") }
+            version { require("1.26") }
             because("Bukkit provides SnakeYaml")
         }
     }
@@ -39,13 +37,13 @@ dependencies {
     "api"(project(":worldedit-libs:core"))
     "implementation"("de.schlichtherle:truezip:6.8.4")
     "implementation"("org.mozilla:rhino-runtime:1.7.13")
-    "implementation"("org.yaml:snakeyaml")
+    "implementation"("org.yaml:snakeyaml:1.26")
     "implementation"("com.google.guava:guava")
     "implementation"("com.google.code.findbugs:jsr305:1.3.9")
     "implementation"("com.google.code.gson:gson")
 
-    "implementation"("org.apache.logging.log4j:log4j-api:2.8.1") {
-        because("Mojang provides Log4J 2.8.1")
+    "implementation"("org.apache.logging.log4j:log4j-api:2.14.1") {
+        because("Mojang provides Log4J 2.14.1")
     }
 
     "implementation"("it.unimi.dsi:fastutil")
@@ -61,9 +59,9 @@ dependencies {
     "compileOnly"("com.google.auto.value:auto-value-annotations:${Versions.AUTO_VALUE}")
     "annotationProcessor"("com.google.auto.value:auto-value:${Versions.AUTO_VALUE}")
 
-    "languageFiles"("${project.group}:worldedit-lang:7.2.1:68@zip")
+    "languageFiles"("${project.group}:worldedit-lang:7.2.6:289@zip")
 
-    "testRuntimeOnly"("org.apache.logging.log4j:log4j-core:2.8.1")
+    "testRuntimeOnly"("org.apache.logging.log4j:log4j-core:2.14.1")
 }
 
 tasks.named<Test>("test") {
@@ -82,6 +80,10 @@ tasks.named<AntlrTask>("generateGrammarSource").configure {
         "-visitor", "-package", pkg,
         "-Xexact-output-dir"
     )
+}
+
+tasks.named("sourcesJar") {
+    mustRunAfter("generateGrammarSource")
 }
 
 configure<LicenseExtension> {
@@ -106,11 +108,7 @@ plugins.withId("idea") {
 
 sourceSets.named("main") {
     java {
-        srcDir("src/main/java")
         srcDir("src/legacy/java")
-    }
-    resources {
-        srcDir("src/main/resources")
     }
 }
 
@@ -120,5 +118,12 @@ tasks.named<Copy>("processResources") {
             "i18n.zip"
         }
         into("lang")
+    }
+}
+
+configure<PublishingExtension> {
+    publications.named<MavenPublication>("maven") {
+        artifactId = the<BasePluginConvention>().archivesBaseName
+        from(components["java"])
     }
 }

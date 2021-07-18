@@ -28,7 +28,7 @@ import com.sk89q.worldedit.util.nbt.CompoundBinaryTag;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ChunkHolder;
 import net.minecraft.server.world.ServerChunkManager;
 import net.minecraft.util.math.BlockPos;
@@ -105,19 +105,21 @@ public class FabricWorldNativeAccess implements WorldNativeAccess<WorldChunk, Bl
 
     @Override
     public boolean updateTileEntity(BlockPos position, CompoundBinaryTag tag) {
-        CompoundTag nativeTag = NBTConverter.toNative(tag);
+        NbtCompound nativeTag = NBTConverter.toNative(tag);
         BlockEntity tileEntity = getWorld().getWorldChunk(position).getBlockEntity(position);
         if (tileEntity == null) {
             return false;
         }
-        tileEntity.setLocation(getWorld(), position);
-        tileEntity.fromTag(getWorld().getBlockState(position), nativeTag);
+        tileEntity.readNbt(nativeTag);
+        tileEntity.markDirty();
         return true;
     }
 
     @Override
-    public void notifyBlockUpdate(BlockPos position, BlockState oldState, BlockState newState) {
-        getWorld().updateListeners(position, oldState, newState, UPDATE | NOTIFY);
+    public void notifyBlockUpdate(WorldChunk chunk, BlockPos position, BlockState oldState, BlockState newState) {
+        if (chunk.getSectionArray()[world.get().getSectionIndex(position.getY())] != null) {
+            getWorld().updateListeners(position, oldState, newState, UPDATE | NOTIFY);
+        }
     }
 
     @Override
@@ -126,8 +128,10 @@ public class FabricWorldNativeAccess implements WorldNativeAccess<WorldChunk, Bl
     }
 
     @Override
-    public void markBlockChanged(BlockPos position) {
-        ((ServerChunkManager) getWorld().getChunkManager()).markForUpdate(position);
+    public void markBlockChanged(WorldChunk chunk, BlockPos position) {
+        if (chunk.getSectionArray()[world.get().getSectionIndex(position.getY())] != null) {
+            ((ServerChunkManager) getWorld().getChunkManager()).markForUpdate(position);
+        }
     }
 
     @Override
